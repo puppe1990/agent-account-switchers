@@ -3,6 +3,7 @@ package cli
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -120,6 +121,83 @@ func TestCLI_switchWithoutName(t *testing.T) {
 		t.Fatal("expected error")
 	}
 	if err.Error() != "informe a conta: ocgs switch <nome>" {
+		t.Fatalf("got %q", err.Error())
+	}
+}
+
+func TestCLI_addSaveRemove(t *testing.T) {
+	dir, goName, _ := writeCLIFixture(t)
+	s := store.New(dir)
+	added := gofakeit.LetterN(10)
+	key := "sk-" + gofakeit.LetterN(40)
+	if _, _, err := runCLI(t, dir, "add", added, key); err != nil {
+		t.Fatal(err)
+	}
+	entries, _ := s.List()
+	var addedActive bool
+	found := false
+	for _, e := range entries {
+		if e.Name == added {
+			found = true
+			addedActive = e.Active
+		}
+	}
+	if !found || addedActive {
+		t.Fatalf("add %+v", entries)
+	}
+	renamed := gofakeit.LetterN(10)
+	if _, _, err := runCLI(t, dir, "save", renamed); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := runCLI(t, dir, "remove", added); err != nil {
+		t.Fatal(err)
+	}
+	entries, _ = s.List()
+	for _, e := range entries {
+		if e.Name == added {
+			t.Fatal("remove failed")
+		}
+		if e.Name == goName {
+			t.Fatal("save should have renamed active")
+		}
+	}
+}
+
+func TestCLI_verifyOKAnd401(t *testing.T) {
+	dir, _, _ := writeCLIFixture(t)
+	out := &bytes.Buffer{}
+	errBuf := &bytes.Buffer{}
+	cmd := New(store.New(dir), stubVerifier{}, out, errBuf)
+	cmd.SetArgs([]string{"verify"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out.String(), "chave OpenCode Go ativa é válida.") {
+		t.Fatalf("stdout %q", out.String())
+	}
+
+	out.Reset()
+	cmd = New(store.New(dir), stubVerifier{err: fmt.Errorf("a chave ativa foi recusada pela API OpenCode Go (HTTP 401). Troque de conta ou gere outra chave.")}, out, errBuf)
+	cmd.SetArgs([]string{"verify"})
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if !strings.Contains(err.Error(), "HTTP 401") {
+		t.Fatalf("got %q", err.Error())
+	}
+	if strings.Contains(err.Error(), "sk-") {
+		t.Fatal("leaked key")
+	}
+}
+
+func TestCLI_missingStore(t *testing.T) {
+	dir := t.TempDir()
+	_, _, err := runCLI(t, dir, "list")
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if !strings.Contains(err.Error(), "não achei o store do OpenCode em "+dir) {
 		t.Fatalf("got %q", err.Error())
 	}
 }
