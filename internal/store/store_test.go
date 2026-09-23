@@ -241,3 +241,75 @@ func TestSwitch_duplicateName(t *testing.T) {
 		t.Fatalf("got %q want %q", err.Error(), want)
 	}
 }
+
+func TestAdd_createsInactiveAccount(t *testing.T) {
+	fx := newFixture(t)
+	s := New(fx.Dir)
+	name := gofakeit.LetterN(10)
+	key := "sk-" + gofakeit.LetterN(40)
+	if err := s.Add(name, key); err != nil {
+		t.Fatal(err)
+	}
+	entries, err := s.List()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var found *Entry
+	for i := range entries {
+		if entries[i].Name == name {
+			found = &entries[i]
+		}
+	}
+	if found == nil {
+		t.Fatalf("missing %q in %+v", name, entries)
+	}
+	if found.Active {
+		t.Fatal("add must not activate")
+	}
+	if readAccount(t, fx.Dir).Active[serviceGo] != fx.GoID {
+		t.Fatal("active id changed")
+	}
+	auth := readAuth(t, fx.Dir)
+	var cred struct {
+		Key string `json:"key"`
+	}
+	_ = json.Unmarshal(auth[serviceGo], &cred)
+	if cred.Key != fx.GoKey {
+		t.Fatal("add must not write auth.json")
+	}
+}
+
+func TestAdd_rejectsDuplicateName(t *testing.T) {
+	fx := newFixture(t)
+	err := New(fx.Dir).Add(fx.GoName, "sk-"+gofakeit.LetterN(40))
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	want := fmt.Sprintf("já existe conta Go chamada %q. Use outro nome ou remova a atual.", fx.GoName)
+	if err.Error() != want {
+		t.Fatalf("got %q want %q", err.Error(), want)
+	}
+}
+
+func TestAdd_rejectsEmptyKey(t *testing.T) {
+	fx := newFixture(t)
+	err := New(fx.Dir).Add(gofakeit.LetterN(8), "  ")
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if err.Error() != "informe a chave: ocgs add <nome> <chave>" {
+		t.Fatalf("got %q", err.Error())
+	}
+}
+
+func TestAdd_rejectsInvalidName(t *testing.T) {
+	fx := newFixture(t)
+	err := New(fx.Dir).Add("foo/bar", "sk-"+gofakeit.LetterN(40))
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	want := `nome de conta inválido: "foo/bar". Use um nome sem "/" e não vazio.`
+	if err.Error() != want {
+		t.Fatalf("got %q want %q", err.Error(), want)
+	}
+}
