@@ -212,3 +212,31 @@ func (s *Store) Switch(name string) error {
 	}
 	return writeAtomic(s.authPath(), auth)
 }
+
+func (s *Store) Save(name string) error {
+	name, err := normalizeName(name)
+	if err != nil {
+		return err
+	}
+	f, err := s.load()
+	if err != nil {
+		return err
+	}
+	activeID, ok := f.Active[serviceGo]
+	if !ok || activeID == "" {
+		return fmt.Errorf("não há conta OpenCode Go ativa para salvar. Faça login ou ocgs add … e ocgs switch.")
+	}
+	acc, ok := f.Accounts[activeID]
+	if !ok || acc.ServiceID != serviceGo {
+		return fmt.Errorf("não há conta OpenCode Go ativa para salvar. Faça login ou ocgs add … e ocgs switch.")
+	}
+	if acc.Description == name {
+		return nil
+	}
+	if matches := s.goByName(f, name); len(matches) > 0 {
+		return fmt.Errorf("já existe conta Go chamada %q. Use outro nome ou remova a atual.", name)
+	}
+	acc.Description = name
+	f.Accounts[activeID] = acc
+	return writeAtomic(s.accountPath(), f)
+}

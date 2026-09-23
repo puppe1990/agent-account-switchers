@@ -313,3 +313,58 @@ func TestAdd_rejectsInvalidName(t *testing.T) {
 		t.Fatalf("got %q want %q", err.Error(), want)
 	}
 }
+
+func TestSave_renamesActive(t *testing.T) {
+	fx := newFixture(t)
+	s := New(fx.Dir)
+	newName := gofakeit.LetterN(10)
+	if err := s.Save(newName); err != nil {
+		t.Fatal(err)
+	}
+	entries, err := s.List()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 1 || entries[0].Name != newName || !entries[0].Active {
+		t.Fatalf("%+v", entries)
+	}
+}
+
+func TestSave_sameNameIsNoop(t *testing.T) {
+	fx := newFixture(t)
+	if err := New(fx.Dir).Save(fx.GoName); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestSave_withoutActive(t *testing.T) {
+	fx := newFixture(t)
+	acc := readAccount(t, fx.Dir)
+	delete(acc.Active, serviceGo)
+	writeJSON(t, filepath.Join(fx.Dir, "account.json"), acc)
+	err := New(fx.Dir).Save(gofakeit.LetterN(8))
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	want := "não há conta OpenCode Go ativa para salvar. Faça login ou ocgs add … e ocgs switch."
+	if err.Error() != want {
+		t.Fatalf("got %q want %q", err.Error(), want)
+	}
+}
+
+func TestSave_rejectsDuplicateName(t *testing.T) {
+	fx := newFixture(t)
+	s := New(fx.Dir)
+	other := gofakeit.LetterN(10)
+	if err := s.Add(other, "sk-"+gofakeit.LetterN(40)); err != nil {
+		t.Fatal(err)
+	}
+	err := s.Save(other)
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	want := fmt.Sprintf("já existe conta Go chamada %q. Use outro nome ou remova a atual.", other)
+	if err.Error() != want {
+		t.Fatalf("got %q want %q", err.Error(), want)
+	}
+}
