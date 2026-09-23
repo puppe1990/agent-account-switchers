@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/brianvoe/gofakeit/v7"
@@ -424,4 +425,60 @@ func mustList(t *testing.T, s *Store) []Entry {
 		t.Fatal(err)
 	}
 	return e
+}
+
+func TestActiveGoKey_returnsKey(t *testing.T) {
+	fx := newFixture(t)
+	key, err := New(fx.Dir).ActiveGoKey()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if key != fx.GoKey {
+		t.Fatalf("got %q", key)
+	}
+}
+
+func TestActiveGoKey_missingActive(t *testing.T) {
+	fx := newFixture(t)
+	acc := readAccount(t, fx.Dir)
+	delete(acc.Active, serviceGo)
+	writeJSON(t, filepath.Join(fx.Dir, "account.json"), acc)
+	_, err := New(fx.Dir).ActiveGoKey()
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if err.Error() != "não há chave Go ativa para verificar." {
+		t.Fatalf("got %q", err.Error())
+	}
+}
+
+func TestAdd_writes0600AndULID(t *testing.T) {
+	fx := newFixture(t)
+	s := New(fx.Dir)
+	name := gofakeit.LetterN(10)
+	if err := s.Add(name, "sk-"+gofakeit.LetterN(40)); err != nil {
+		t.Fatal(err)
+	}
+	info, err := os.Stat(filepath.Join(fx.Dir, "account.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Mode().Perm() != 0o600 {
+		t.Fatalf("perm %o", info.Mode().Perm())
+	}
+	acc := readAccount(t, fx.Dir)
+	var id string
+	for _, a := range acc.Accounts {
+		if a.Description == name {
+			id = a.ID
+		}
+	}
+	if len(id) != 26 {
+		t.Fatalf("id %q len %d", id, len(id))
+	}
+	for _, c := range id {
+		if !strings.ContainsRune("0123456789ABCDEFGHJKMNPQRSTVWXYZ", c) {
+			t.Fatalf("non-crockford %q in %q", c, id)
+		}
+	}
 }

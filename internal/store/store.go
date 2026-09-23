@@ -241,6 +241,31 @@ func (s *Store) Save(name string) error {
 	return writeAtomic(s.accountPath(), f)
 }
 
+type goCredential struct {
+	Type string `json:"type"`
+	Key  string `json:"key"`
+}
+
+func (s *Store) ActiveGoKey() (string, error) {
+	f, err := s.load()
+	if err != nil {
+		return "", err
+	}
+	id := f.Active[serviceGo]
+	acc, ok := f.Accounts[id]
+	if !ok || acc.ServiceID != serviceGo {
+		return "", fmt.Errorf("não há chave Go ativa para verificar.")
+	}
+	var cred goCredential
+	if err := json.Unmarshal(acc.Credential, &cred); err != nil {
+		return "", err
+	}
+	if cred.Key == "" {
+		return "", fmt.Errorf("não há chave Go ativa para verificar.")
+	}
+	return cred.Key, nil
+}
+
 func (s *Store) Remove(name string) error {
 	name, err := normalizeName(name)
 	if err != nil {
