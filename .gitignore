@@ -1,1 +1,5 @@
 .worktrees/
+/ocgs
+/bin/
+.DS_Store
+*.exe
