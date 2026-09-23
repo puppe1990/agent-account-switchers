@@ -149,3 +149,63 @@ func TestList_marksActiveAndOmitsKey(t *testing.T) {
 		}
 	}
 }
+
+func TestSwitch_updatesActiveAndAuthJSON(t *testing.T) {
+	fx := newFixture(t)
+	s := New(fx.Dir)
+	second := gofakeit.LetterN(10)
+	secondKey := "sk-" + gofakeit.LetterN(40)
+	if err := s.Add(second, secondKey); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Switch(second); err != nil {
+		t.Fatal(err)
+	}
+	acc := readAccount(t, fx.Dir)
+	var switched Account
+	for _, a := range acc.Accounts {
+		if a.ServiceID == serviceGo && a.Description == second {
+			switched = a
+		}
+	}
+	if acc.Active[serviceGo] != switched.ID {
+		t.Fatalf("active=%s want %s", acc.Active[serviceGo], switched.ID)
+	}
+	auth := readAuth(t, fx.Dir)
+	var cred struct {
+		Type string `json:"type"`
+		Key  string `json:"key"`
+	}
+	if err := json.Unmarshal(auth[serviceGo], &cred); err != nil {
+		t.Fatal(err)
+	}
+	if cred.Key != secondKey {
+		t.Fatalf("auth key %q", cred.Key)
+	}
+}
+
+func TestSwitch_preservesOtherProviders(t *testing.T) {
+	fx := newFixture(t)
+	s := New(fx.Dir)
+	other := gofakeit.LetterN(10)
+	if err := s.Add(other, "sk-"+gofakeit.LetterN(40)); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Switch(other); err != nil {
+		t.Fatal(err)
+	}
+	acc := readAccount(t, fx.Dir)
+	if acc.Active["openai"] != fx.OtherID {
+		t.Fatalf("openai active mutated: %s", acc.Active["openai"])
+	}
+	auth := readAuth(t, fx.Dir)
+	var cred struct {
+		Key string `json:"key"`
+	}
+	if err := json.Unmarshal(auth["openai"], &cred); err != nil {
+		t.Fatal(err)
+	}
+	if cred.Key != fx.OtherKey {
+		t.Fatalf("openai auth mutated")
+	}
+}

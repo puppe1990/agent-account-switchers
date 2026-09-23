@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 )
 
 const serviceGo = "opencode-go"
@@ -82,4 +83,132 @@ func (s *Store) List() ([]Entry, error) {
 	}
 	sort.Slice(entries, func(i, j int) bool { return entries[i].Name < entries[j].Name })
 	return entries, nil
+}
+
+func writeAtomic(path string, v any) error {
+	b, err := json.MarshalIndent(v, "", "  ")
+	if err != nil {
+		return err
+	}
+	tmp := path + ".tmp"
+	if err := os.WriteFile(tmp, b, 0o600); err != nil {
+		return fmt.Errorf("não consegui gravar %s: %v. Nada foi alterado.", path, err)
+	}
+	if err := os.Rename(tmp, path); err != nil {
+		return fmt.Errorf("não consegui gravar %s: %v. Nada foi alterado.", path, err)
+	}
+	return nil
+}
+
+func (s *Store) loadAuth() (map[string]json.RawMessage, error) {
+	b, err := os.ReadFile(s.authPath())
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, s.missing()
+		}
+		return nil, err
+	}
+	var m map[string]json.RawMessage
+	if err := json.Unmarshal(b, &m); err != nil {
+		return nil, err
+	}
+	if m == nil {
+		m = map[string]json.RawMessage{}
+	}
+	return m, nil
+}
+
+func normalizeName(name string) (string, error) {
+	name = strings.TrimSpace(name)
+	if name == "" || strings.Contains(name, "/") {
+		return "", fmt.Errorf("nome de conta inválido: %q. Use um nome sem \"/\" e não vazio.", name)
+	}
+	return name, nil
+}
+
+func (s *Store) goByName(f *File, name string) []Account {
+	var found []Account
+	for _, acc := range f.Accounts {
+		if acc.ServiceID == serviceGo && acc.Description == name {
+			found = append(found, acc)
+		}
+	}
+	return found
+}
+
+func (s *Store) goNames(f *File) []string {
+	var names []string
+	for _, acc := range f.Accounts {
+		if acc.ServiceID == serviceGo {
+			names = append(names, acc.Description)
+		}
+	}
+	sort.Strings(names)
+	return names
+}
+
+func (s *Store) notFound(name string, f *File) error {
+	names := s.goNames(f)
+	if len(names) == 0 {
+		return fmt.Errorf("conta %q não existe. não há contas Go", name)
+	}
+	return fmt.Errorf("conta %q não existe. Contas Go: %s.", name, strings.Join(names, ", "))
+}
+
+func (s *Store) Add(name, key string) error {
+	name, err := normalizeName(name)
+	if err != nil {
+		return err
+	}
+	if strings.TrimSpace(key) == "" {
+		return fmt.Errorf("informe a chave: ocgs add <nome> <chave>")
+	}
+	f, err := s.load()
+	if err != nil {
+		return err
+	}
+	if len(s.goByName(f, name)) > 0 {
+		return fmt.Errorf("já existe conta Go chamada %q. Use outro nome ou remova a atual.", name)
+	}
+	id, err := newID()
+	if err != nil {
+		return err
+	}
+	cred, err := json.Marshal(map[string]string{"type": "api", "key": key})
+	if err != nil {
+		return err
+	}
+	f.Accounts[id] = Account{
+		ID: id, ServiceID: serviceGo, Description: name, Credential: cred,
+	}
+	return writeAtomic(s.accountPath(), f)
+}
+
+func (s *Store) Switch(name string) error {
+	name, err := normalizeName(name)
+	if err != nil {
+		return err
+	}
+	f, err := s.load()
+	if err != nil {
+		return err
+	}
+	found := s.goByName(f, name)
+	if len(found) == 0 {
+		return s.notFound(name, f)
+	}
+	if len(found) > 1 {
+		return fmt.Errorf("há %d contas Go chamadas %q. Renomeie a ativa com ocgs save <nome-único>.", len(found), name)
+	}
+	acc := found[0]
+	f.Active[serviceGo] = acc.ID
+	auth, err := s.loadAuth()
+	if err != nil {
+		return err
+	}
+	auth[serviceGo] = acc.Credential
+	if err := writeAtomic(s.accountPath(), f); err != nil {
+		return err
+	}
+	return writeAtomic(s.authPath(), auth)
 }
