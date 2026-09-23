@@ -6,13 +6,10 @@ Outros provedores (Copilot, OpenAI, Zen, …) não são alterados. Sessões Open
 
 ## Install
 
-```bash
-go install opencode-go-switcher/cmd/ocgs@latest
-```
-
-Ou neste repo:
+Neste repo:
 
 ```bash
+go install ./cmd/ocgs
 go build -o ocgs ./cmd/ocgs
 ```
 
