@@ -12,7 +12,7 @@ type Verifier interface {
 	Verify(key string) error
 }
 
-func normalizeArgs(args []string) []string {
+func NormalizeArgs(args []string) []string {
 	if len(args) == 0 {
 		return args
 	}

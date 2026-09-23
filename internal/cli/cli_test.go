@@ -46,7 +46,7 @@ func runCLI(t *testing.T, dir string, args ...string) (stdout, stderr string, er
 	out := &bytes.Buffer{}
 	errBuf := &bytes.Buffer{}
 	cmd := New(store.New(dir), stubVerifier{}, out, errBuf)
-	cmd.SetArgs(normalizeArgs(args))
+	cmd.SetArgs(NormalizeArgs(args))
 	err = cmd.Execute()
 	return out.String(), errBuf.String(), err
 }
