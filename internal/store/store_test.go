@@ -2,6 +2,7 @@ package store
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -207,5 +208,36 @@ func TestSwitch_preservesOtherProviders(t *testing.T) {
 	}
 	if cred.Key != fx.OtherKey {
 		t.Fatalf("openai auth mutated")
+	}
+}
+
+func TestSwitch_unknownName(t *testing.T) {
+	fx := newFixture(t)
+	err := New(fx.Dir).Switch("nao-existe")
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	want := fmt.Sprintf("conta %q não existe. Contas Go: %s.", "nao-existe", fx.GoName)
+	if err.Error() != want {
+		t.Fatalf("got %q want %q", err.Error(), want)
+	}
+}
+
+func TestSwitch_duplicateName(t *testing.T) {
+	fx := newFixture(t)
+	acc := readAccount(t, fx.Dir)
+	dupID := "01ARZ3NDEKTSV4RRFFQ69G5DUP"
+	cred, _ := json.Marshal(map[string]string{"type": "api", "key": "sk-" + gofakeit.LetterN(40)})
+	acc.Accounts[dupID] = Account{
+		ID: dupID, ServiceID: serviceGo, Description: fx.GoName, Credential: cred,
+	}
+	writeJSON(t, filepath.Join(fx.Dir, "account.json"), acc)
+	err := New(fx.Dir).Switch(fx.GoName)
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	want := fmt.Sprintf("há 2 contas Go chamadas %q. Renomeie a ativa com ocgs save <nome-único>.", fx.GoName)
+	if err.Error() != want {
+		t.Fatalf("got %q want %q", err.Error(), want)
 	}
 }
