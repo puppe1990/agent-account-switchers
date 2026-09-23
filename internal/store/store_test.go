@@ -368,3 +368,60 @@ func TestSave_rejectsDuplicateName(t *testing.T) {
 		t.Fatalf("got %q want %q", err.Error(), want)
 	}
 }
+
+func TestRemove_deletesInactive(t *testing.T) {
+	fx := newFixture(t)
+	s := New(fx.Dir)
+	extra := gofakeit.LetterN(10)
+	if err := s.Add(extra, "sk-"+gofakeit.LetterN(40)); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Remove(extra); err != nil {
+		t.Fatal(err)
+	}
+	for _, e := range mustList(t, s) {
+		if e.Name == extra {
+			t.Fatalf("still listed %q", extra)
+		}
+	}
+}
+
+func TestRemove_rejectsActive(t *testing.T) {
+	fx := newFixture(t)
+	err := New(fx.Dir).Remove(fx.GoName)
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	want := fmt.Sprintf("%q está ativa. Troque com ocgs switch <outra> antes de remover.", fx.GoName)
+	if err.Error() != want {
+		t.Fatalf("got %q want %q", err.Error(), want)
+	}
+}
+
+func TestRemove_duplicateName(t *testing.T) {
+	fx := newFixture(t)
+	acc := readAccount(t, fx.Dir)
+	dupID := "01ARZ3NDEKTSV4RRFFQ69G5RMV"
+	cred, _ := json.Marshal(map[string]string{"type": "api", "key": "sk-" + gofakeit.LetterN(40)})
+	acc.Accounts[dupID] = Account{
+		ID: dupID, ServiceID: serviceGo, Description: fx.GoName, Credential: cred,
+	}
+	writeJSON(t, filepath.Join(fx.Dir, "account.json"), acc)
+	err := New(fx.Dir).Remove(fx.GoName)
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	want := fmt.Sprintf("há 2 contas Go chamadas %q. Renomeie a ativa com ocgs save <nome-único>.", fx.GoName)
+	if err.Error() != want {
+		t.Fatalf("got %q want %q", err.Error(), want)
+	}
+}
+
+func mustList(t *testing.T, s *Store) []Entry {
+	t.Helper()
+	e, err := s.List()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return e
+}

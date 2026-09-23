@@ -240,3 +240,27 @@ func (s *Store) Save(name string) error {
 	f.Accounts[activeID] = acc
 	return writeAtomic(s.accountPath(), f)
 }
+
+func (s *Store) Remove(name string) error {
+	name, err := normalizeName(name)
+	if err != nil {
+		return err
+	}
+	f, err := s.load()
+	if err != nil {
+		return err
+	}
+	found := s.goByName(f, name)
+	if len(found) == 0 {
+		return s.notFound(name, f)
+	}
+	if len(found) > 1 {
+		return fmt.Errorf("há %d contas Go chamadas %q. Renomeie a ativa com ocgs save <nome-único>.", len(found), name)
+	}
+	acc := found[0]
+	if f.Active[serviceGo] == acc.ID {
+		return fmt.Errorf("%q está ativa. Troque com ocgs switch <outra> antes de remover.", name)
+	}
+	delete(f.Accounts, acc.ID)
+	return writeAtomic(s.accountPath(), f)
+}
