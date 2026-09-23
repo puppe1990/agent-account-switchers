@@ -9,8 +9,6 @@ import (
 	"github.com/brianvoe/gofakeit/v7"
 )
 
-const serviceGo = "opencode-go"
-
 type fixture struct {
 	Dir      string
 	GoID     string
@@ -120,5 +118,34 @@ func TestList_invalidJSON(t *testing.T) {
 	}
 	if wantPrefix := "account.json em " + path + " não é um JSON v2 válido:"; len(err.Error()) < len(wantPrefix) || err.Error()[:len(wantPrefix)] != wantPrefix {
 		t.Fatalf("got %q", err.Error())
+	}
+}
+
+func TestList_marksActiveAndOmitsKey(t *testing.T) {
+	fx := newFixture(t)
+	entries, err := New(fx.Dir).List()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 1 {
+		t.Fatalf("got %d entries: %+v", len(entries), entries)
+	}
+	if entries[0].Name != fx.GoName {
+		t.Fatalf("name %q", entries[0].Name)
+	}
+	if !entries[0].Active {
+		t.Fatal("expected active")
+	}
+	raw, err := os.ReadFile(filepath.Join(fx.Dir, "account.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !json.Valid(raw) {
+		t.Fatal("fixture broken")
+	}
+	for _, e := range entries {
+		if e.Name == fx.GoKey || e.Name == fx.OtherKey {
+			t.Fatalf("listed a key: %q", e.Name)
+		}
 	}
 }

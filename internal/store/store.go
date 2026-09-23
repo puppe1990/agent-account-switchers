@@ -5,7 +5,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 )
+
+const serviceGo = "opencode-go"
 
 type Account struct {
 	ID          string          `json:"id"`
@@ -65,9 +68,18 @@ func (s *Store) load() (*File, error) {
 }
 
 func (s *Store) List() ([]Entry, error) {
-	_, err := s.load()
+	f, err := s.load()
 	if err != nil {
 		return nil, err
 	}
-	return nil, nil
+	activeID := f.Active[serviceGo]
+	var entries []Entry
+	for _, acc := range f.Accounts {
+		if acc.ServiceID != serviceGo {
+			continue
+		}
+		entries = append(entries, Entry{Name: acc.Description, Active: acc.ID == activeID})
+	}
+	sort.Slice(entries, func(i, j int) bool { return entries[i].Name < entries[j].Name })
+	return entries, nil
 }
