@@ -49,7 +49,7 @@ Arquivos de credencial são gravados com modo `0600`. A CLI nunca imprime a API 
 
 ## Interface web
 
-`switcher-ui` sobe um servidor local com uma página Tailwind para trocar as contas do OpenCode Go e do Command Code com um clique.
+`switcher-ui` sobe um servidor local com uma página Tailwind para trocar as contas do OpenCode Go, do Command Code e do Grok com um clique.
 
 ```sh
 switcher-ui                 # abre http://127.0.0.1:8765
@@ -61,7 +61,8 @@ switcher-ui --no-open       # não abrir o navegador
 - A página usa o Tailwind via CDN (precisa de internet para o estilo).
 - Endpoints: `GET /api/accounts` e `POST /api/switch` (`{"service","name"}`).
 - Nunca expõe chaves — só o nome e qual conta está ativa.
-- `SWITCHER_UI_PORT` define a porta; `OPENCODE_DATA_DIR`/`CCS_DATA_DIR` os diretórios.
+- `SWITCHER_UI_PORT` define a porta; `OPENCODE_DATA_DIR`/`CCS_DATA_DIR`/`GROK_HOME` os diretórios.
+- O serviço Grok lê os perfis de `~/.grok/accounts` (formato do [grok-accounts](https://github.com/puppe1990/grok-accounts)) e troca reescrevendo `~/.grok/auth.json`.
 
 ## Qualidade
 
