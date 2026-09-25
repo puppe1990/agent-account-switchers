@@ -8,7 +8,7 @@ Status: draft para revisão
 CLI em Go para listar, adicionar, salvar, trocar, remover e verificar contas **somente** do provedor OpenCode Go (`serviceID` / chave `opencode-go`). Outros provedores no store do OpenCode permanecem intactos.
 
 Comando do binário: `ocgs`.  
-Módulo: `opencode-go-switcher`.  
+Módulo: `agent-account-switchers`.  
 Go: 1.24+. Dependências de produção: Cobra. Testes: `testing` da stdlib + `gofakeit`.
 
 ## Fora de escopo

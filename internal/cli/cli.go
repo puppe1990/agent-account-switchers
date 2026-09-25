@@ -5,7 +5,7 @@ import (
 	"io"
 
 	"github.com/spf13/cobra"
-	"opencode-go-switcher/internal/store"
+	"agent-account-switchers/internal/store"
 )
 
 type Verifier interface {

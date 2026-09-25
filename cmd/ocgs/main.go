@@ -6,9 +6,9 @@ import (
 	"os"
 	"time"
 
-	"opencode-go-switcher/internal/cli"
-	"opencode-go-switcher/internal/store"
-	"opencode-go-switcher/internal/verify"
+	"agent-account-switchers/internal/cli"
+	"agent-account-switchers/internal/store"
+	"agent-account-switchers/internal/verify"
 )
 
 func main() {
