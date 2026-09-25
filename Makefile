@@ -25,9 +25,10 @@ test:
 build:
 	$(GO) build -o $(BIN)/ocgs ./cmd/ocgs
 	$(GO) build -o $(BIN)/ccs ./cmd/ccs
+	$(GO) build -o $(BIN)/switcher-ui ./cmd/switcher-ui
 
 install:
-	$(GO) install ./cmd/ocgs ./cmd/ccs
+	$(GO) install ./cmd/ocgs ./cmd/ccs ./cmd/switcher-ui
 
 clean:
 	rm -rf $(BIN)

@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Contas dos agentes</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="min-h-screen bg-neutral-950 text-neutral-100 antialiased">
+    <main class="mx-auto flex max-w-3xl flex-col gap-6 p-6">
+      <header class="space-y-1">
+        <h1 class="text-2xl font-semibold tracking-tight">
+          Contas dos agentes
+        </h1>
+        <p class="text-sm text-neutral-400">
+          Troque a conta ativa do OpenCode Go e do Command Code. A troca vale no
+          próximo launch.
+        </p>
+      </header>
+
+      <div id="services" class="grid gap-4 sm:grid-cols-2"></div>
+
+      <p
+        id="status"
+        class="hidden rounded-lg border px-3 py-2 text-sm"
+        role="status"
+      ></p>
+    </main>
+
+    <script>
+      const servicesEl = document.getElementById('services')
+      const statusEl = document.getElementById('status')
+      let busy = false
+
+      const esc = (value) =>
+        String(value).replace(
+          /[&<>"']/g,
+          (char) =>
+            ({
+              '&': '&amp;',
+              '<': '&lt;',
+              '>': '&gt;',
+              '"': '&quot;',
+              "'": '&#39;',
+            })[char],
+        )
+
+      function showStatus(message, ok = true) {
+        statusEl.textContent = message
+        statusEl.className =
+          'rounded-lg border px-3 py-2 text-sm ' +
+          (ok
+            ? 'border-emerald-900 bg-emerald-950 text-emerald-300'
+            : 'border-red-900 bg-red-950 text-red-300')
+      }
+
+      function render(services) {
+        servicesEl.innerHTML = services.map(card).join('')
+      }
+
+      function card(service) {
+        const rows = service.accounts.length
+          ? service.accounts.map((account) => row(service.id, account)).join('')
+          : '<p class="text-sm text-neutral-500">Nenhuma conta salva.</p>'
+        return `
+          <section class="flex flex-col gap-3 rounded-xl border border-neutral-800 bg-neutral-900/60 p-4">
+            <h2 class="text-sm font-medium text-neutral-300">${esc(service.label)}</h2>
+            <div class="flex flex-col gap-2">${rows}</div>
+          </section>`
+      }
+
+      function row(serviceId, account) {
+        const base =
+          'flex w-full items-center justify-between gap-2 rounded-lg border px-3 py-2 text-sm'
+        if (account.active) {
+          return `<div class="${base} border-emerald-800 bg-emerald-950/60 text-emerald-200">
+            <span class="truncate">${esc(account.name)}</span>
+            <span class="rounded bg-emerald-900/70 px-2 py-0.5 text-xs text-emerald-300">ativa</span>
+          </div>`
+        }
+        return `<button type="button" class="${base} border-neutral-800 text-neutral-200 transition hover:border-neutral-600 hover:bg-neutral-800/60" data-service="${esc(serviceId)}" data-name="${esc(account.name)}">
+          <span class="truncate">${esc(account.name)}</span>
+          <span class="text-xs text-neutral-400">trocar</span>
+        </button>`
+      }
+
+      async function errorText(response) {
+        try {
+          const body = await response.json()
+          return body.error || `HTTP ${response.status}`
+        } catch {
+          return `HTTP ${response.status}`
+        }
+      }
+
+      async function load() {
+        try {
+          const response = await fetch('/api/accounts')
+          if (!response.ok) throw new Error(await errorText(response))
+          render(await response.json())
+        } catch (error) {
+          showStatus(String(error.message || error), false)
+        }
+      }
+
+      servicesEl.addEventListener('click', async (event) => {
+        const button = event.target.closest('button[data-service]')
+        if (!button || busy) return
+        const { service, name } = button.dataset
+        busy = true
+        button.disabled = true
+        try {
+          const response = await fetch('/api/switch', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ service, name }),
+          })
+          if (!response.ok) throw new Error(await errorText(response))
+          render(await response.json())
+          showStatus(`Agora usando "${name}". Vale no próximo launch.`, true)
+        } catch (error) {
+          showStatus(String(error.message || error), false)
+        } finally {
+          busy = false
+          load()
+        }
+      })
+
+      load()
+    </script>
+  </body>
+</html>

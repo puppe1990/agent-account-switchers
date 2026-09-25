@@ -1,6 +1,7 @@
 .worktrees/
 /ocgs
 /ccs
+/switcher-ui
 /bin/
 node_modules/
 .DS_Store
