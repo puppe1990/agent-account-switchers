@@ -1,4 +1,4 @@
-module opencode-go-switcher
+module agent-account-switchers
 
 go 1.26.4
 

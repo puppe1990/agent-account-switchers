@@ -8,7 +8,7 @@
 
 **Tech Stack:** Go 1.24, Cobra, stdlib `testing`, `gofakeit/v7`, `crypto/rand` ULID, `net/http/httptest`.
 
-**Spec:** `docs/superpowers/specs/2026-09-23-opencode-go-switcher-design.md`
+**Spec:** `docs/superpowers/specs/2026-09-23-agent-account-switchers-design.md`
 
 ---
 
@@ -16,7 +16,7 @@
 
 | File | Responsibility |
 |---|---|
-| `go.mod` / `go.sum` | Module `opencode-go-switcher`, Cobra + gofakeit |
+| `go.mod` / `go.sum` | Module `agent-account-switchers`, Cobra + gofakeit |
 | `.gitignore` | Binaries, `.DS_Store` |
 | `internal/store/paths.go` | `ResolveDataDir(getenv, home)` |
 | `internal/store/id.go` | `newID()` ULID 26 chars |
@@ -84,7 +84,7 @@ func (s *Store) ActiveGoKey() (string, error)
 - [ ] **Step 1: Init module and gitignore**
 
 ```bash
-go mod init opencode-go-switcher
+go mod init agent-account-switchers
 go get github.com/spf13/cobra@v1.10.1
 go get github.com/brianvoe/gofakeit/v7@v7.4.0
 ```
@@ -1507,7 +1507,7 @@ import (
 	"testing"
 
 	"github.com/brianvoe/gofakeit/v7"
-	"opencode-go-switcher/internal/store"
+	"agent-account-switchers/internal/store"
 )
 
 type stubVerifier struct{ err error }
@@ -1639,7 +1639,7 @@ import (
 	"io"
 
 	"github.com/spf13/cobra"
-	"opencode-go-switcher/internal/store"
+	"agent-account-switchers/internal/store"
 )
 
 type Verifier interface {
@@ -1924,9 +1924,9 @@ import (
 	"os"
 	"time"
 
-	"opencode-go-switcher/internal/cli"
-	"opencode-go-switcher/internal/store"
-	"opencode-go-switcher/internal/verify"
+	"agent-account-switchers/internal/cli"
+	"agent-account-switchers/internal/store"
+	"agent-account-switchers/internal/verify"
 )
 
 func main() {
@@ -1979,7 +1979,7 @@ Outros provedores (Copilot, OpenAI, Zen, …) não são alterados. Sessões Open
 ## Install
 
 ```bash
-go install opencode-go-switcher/cmd/ocgs@latest
+go install agent-account-switchers/cmd/ocgs@latest
 ```
 
 Ou neste repo:

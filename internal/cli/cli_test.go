@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	"github.com/brianvoe/gofakeit/v7"
-	"opencode-go-switcher/internal/store"
+	"agent-account-switchers/internal/store"
 )
 
 type stubVerifier struct{ err error }

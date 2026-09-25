@@ -8,7 +8,7 @@ Status: approved (execução autônoma)
 CLI em Go para listar, adicionar, salvar, trocar, remover e verificar contas do **Command Code** (`cmd`). O Command Code 1.64 guarda uma única sessão em `~/.commandcode/auth.json`; o `ccs` mantém um ledger nomeado ao lado e, no switch, reescreve esse `auth.json`.
 
 Comando: `ccs`.  
-Módulo: `opencode-go-switcher` (mesmo repo do `ocgs`).  
+Módulo: `agent-account-switchers` (mesmo repo do `ocgs`).  
 Go 1.24+, Cobra, `testing` + `gofakeit`.
 
 ## Fora de escopo
