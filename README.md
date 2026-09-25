@@ -1,6 +1,6 @@
-# ocgs / ccs
+# agent-account-switchers
 
-CLIs em Go para trocar contas de agentes de código.
+CLIs em Go para trocar contas de agentes de código: **`ocgs`** (OpenCode Go) e **`ccs`** (Command Code / `cmd`).
 
 - **`ocgs`** — OpenCode Go (`~/.local/share/opencode/account.json` + `auth.json`)
 - **`ccs`** — Command Code / `cmd` (`~/.commandcode/auth.json` + `ccs-accounts.json`)
@@ -9,7 +9,7 @@ Outros provedores (Copilot, OpenAI, Zen, …) não são alterados. Sessões Open
 
 ## Install
 
-Neste repo:
+Clone [puppe1990/agent-account-switchers](https://github.com/puppe1990/agent-account-switchers) e, na raiz do repo:
 
 ```bash
 go install ./cmd/ocgs ./cmd/ccs
@@ -44,3 +44,15 @@ ccs verify               # GET /alpha/whoami com a chave ativa
 ```
 
 Arquivos de credencial são gravados com modo `0600`. A CLI nunca imprime a API key. Sessões já abertas do `cmd` ou do OpenCode continuam com a conta antiga.
+
+## Qualidade
+
+Lint, formatação e testes rodam no CI (`.github/workflows/ci.yml`) e num hook de pre-commit.
+
+```sh
+pnpm install                 # deps de formatação (prettier)
+make verify                  # gofmt + prettier --check + go vet + golangci-lint + go test + go build
+make test                    # só os testes
+
+git config core.hooksPath .githooks   # ativa o pre-commit (gofmt + prettier + go test)
+```

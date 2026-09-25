@@ -26,15 +26,15 @@ func (c *Client) Verify(key string) error {
 	url := base + "/alpha/whoami"
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-		return fmt.Errorf("não consegui falar com a API Command Code em %s: %v. O switch local não depende disso.", url, err)
+		return fmt.Errorf("não consegui falar com a API Command Code em %s: %w. O switch local não depende disso.", url, err)
 	}
 	req.Header.Set("Authorization", "Bearer "+key)
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := c.http().Do(req)
 	if err != nil {
-		return fmt.Errorf("não consegui falar com a API Command Code em %s: %v. O switch local não depende disso.", url, err)
+		return fmt.Errorf("não consegui falar com a API Command Code em %s: %w. O switch local não depende disso.", url, err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
 		return nil
 	}

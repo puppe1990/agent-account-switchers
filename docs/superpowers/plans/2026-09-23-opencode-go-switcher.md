@@ -14,21 +14,21 @@
 
 ## File map
 
-| File | Responsibility |
-|---|---|
-| `go.mod` / `go.sum` | Module `agent-account-switchers`, Cobra + gofakeit |
-| `.gitignore` | Binaries, `.DS_Store` |
-| `internal/store/paths.go` | `ResolveDataDir(getenv, home)` |
-| `internal/store/id.go` | `newID()` ULID 26 chars |
-| `internal/store/store.go` | Load/save, List/Switch/Add/Save/Remove, name rules, atomic 0600 write |
-| `internal/store/paths_test.go` | Path resolution |
-| `internal/store/store_test.go` | All store behaviors + faker fixtures |
-| `internal/verify/verify.go` | `Client.Verify(key)` |
-| `internal/verify/verify_test.go` | httptest 2xx / 401 / network |
-| `internal/cli/cli.go` | Cobra commands, arg rewrite, stdout/stderr |
-| `internal/cli/cli_test.go` | CLI behaviors against temp store |
-| `cmd/ocgs/main.go` | Wire env, home, HTTP timeout, `os.Exit(1)` |
-| `README.md` | Install, commands, “sessões abertas não mudam” |
+| File                             | Responsibility                                                        |
+| -------------------------------- | --------------------------------------------------------------------- |
+| `go.mod` / `go.sum`              | Module `agent-account-switchers`, Cobra + gofakeit                    |
+| `.gitignore`                     | Binaries, `.DS_Store`                                                 |
+| `internal/store/paths.go`        | `ResolveDataDir(getenv, home)`                                        |
+| `internal/store/id.go`           | `newID()` ULID 26 chars                                               |
+| `internal/store/store.go`        | Load/save, List/Switch/Add/Save/Remove, name rules, atomic 0600 write |
+| `internal/store/paths_test.go`   | Path resolution                                                       |
+| `internal/store/store_test.go`   | All store behaviors + faker fixtures                                  |
+| `internal/verify/verify.go`      | `Client.Verify(key)`                                                  |
+| `internal/verify/verify_test.go` | httptest 2xx / 401 / network                                          |
+| `internal/cli/cli.go`            | Cobra commands, arg rewrite, stdout/stderr                            |
+| `internal/cli/cli_test.go`       | CLI behaviors against temp store                                      |
+| `cmd/ocgs/main.go`               | Wire env, home, HTTP timeout, `os.Exit(1)`                            |
+| `README.md`                      | Install, commands, “sessões abertas não mudam”                        |
 
 Constants used everywhere:
 
@@ -78,6 +78,7 @@ func (s *Store) ActiveGoKey() (string, error)
 ### Task 1: Scaffold module
 
 **Files:**
+
 - Create: `go.mod`
 - Create: `.gitignore`
 
@@ -110,6 +111,7 @@ git commit -m "chore: init Go module for ocgs"
 ### Task 2: Resolve data dir
 
 **Files:**
+
 - Create: `internal/store/paths.go`
 - Create: `internal/store/paths_test.go`
 
@@ -191,6 +193,7 @@ git commit -m "feat: resolve OpenCode data dir from env and home"
 ### Task 3: Load store + fixture helper
 
 **Files:**
+
 - Create: `internal/store/store.go`
 - Create: `internal/store/store_test.go`
 
@@ -425,6 +428,7 @@ git commit -m "feat: load OpenCode account.json with missing and invalid errors"
 ### Task 4: List Go accounts
 
 **Files:**
+
 - Modify: `internal/store/store.go`
 - Modify: `internal/store/store_test.go`
 
@@ -510,6 +514,7 @@ git commit -m "feat: list OpenCode Go accounts with active marker"
 ### Task 5: Switch updates active + auth, preserves others
 
 **Files:**
+
 - Modify: `internal/store/store.go`
 - Modify: `internal/store/store_test.go`
 - Create: `internal/store/id.go` (only if Add is needed; switch uses existing IDs — skip id.go here)
@@ -801,6 +806,7 @@ git commit -m "feat: switch OpenCode Go account and preserve other providers"
 ### Task 6: Switch errors (unknown + duplicate)
 
 **Files:**
+
 - Modify: `internal/store/store_test.go`
 - Modify: `internal/store/store.go` (only if messages differ)
 
@@ -879,6 +885,7 @@ git commit -m "test: reject unknown and duplicate Go account names on switch"
 ### Task 7: Add duplicate, empty key, invalid name, inactive
 
 **Files:**
+
 - Modify: `internal/store/store_test.go`
 - Modify: `internal/store/store.go` if needed
 
@@ -986,6 +993,7 @@ git commit -m "test: add Go account without activating or writing auth.json"
 ### Task 8: Save
 
 **Files:**
+
 - Modify: `internal/store/store.go`
 - Modify: `internal/store/store_test.go`
 
@@ -1104,6 +1112,7 @@ git commit -m "feat: save active OpenCode Go account name"
 ### Task 9: Remove
 
 **Files:**
+
 - Modify: `internal/store/store.go`
 - Modify: `internal/store/store_test.go`
 
@@ -1220,6 +1229,7 @@ git commit -m "feat: remove inactive OpenCode Go accounts"
 ### Task 10: ActiveGoKey + file mode 0600 + ID length
 
 **Files:**
+
 - Modify: `internal/store/store.go`
 - Modify: `internal/store/store_test.go`
 
@@ -1336,6 +1346,7 @@ git commit -m "feat: read active Go key and persist files at 0600"
 ### Task 11: Verify HTTP client
 
 **Files:**
+
 - Create: `internal/verify/verify.go`
 - Create: `internal/verify/verify_test.go`
 
@@ -1490,6 +1501,7 @@ git commit -m "feat: verify OpenCode Go API key over HTTP"
 ### Task 12: CLI — list, switch subcommand, positional
 
 **Files:**
+
 - Create: `internal/cli/cli.go`
 - Create: `internal/cli/cli_test.go`
 
@@ -1795,6 +1807,7 @@ git commit -m "feat: CLI list and switch (subcommand and positional)"
 ### Task 13: CLI add, save, remove, verify, missing store
 
 **Files:**
+
 - Modify: `internal/cli/cli_test.go`
 
 - [ ] **Step 1: Write the failing tests**
@@ -1908,6 +1921,7 @@ git commit -m "feat: CLI add, save, remove, verify"
 ### Task 14: `main` + README
 
 **Files:**
+
 - Create: `cmd/ocgs/main.go`
 - Create: `README.md`
 
@@ -1969,7 +1983,7 @@ Expected: PASS, binary produced.
 
 - [ ] **Step 4: README.md**
 
-```markdown
+````markdown
 # ocgs
 
 CLI em Go para trocar contas **OpenCode Go** no store nativo do OpenCode 1.18 (`~/.local/share/opencode/account.json` + `auth.json`).
@@ -1981,6 +1995,7 @@ Outros provedores (Copilot, OpenAI, Zen, …) não são alterados. Sessões Open
 ```bash
 go install agent-account-switchers/cmd/ocgs@latest
 ```
+````
 
 Ou neste repo:
 
@@ -2004,14 +2019,15 @@ ocgs verify              # GET na API Go com a chave ativa
 ```
 
 Arquivos de credencial são gravados com modo `0600`. A CLI nunca imprime a API key.
-```
+
+````
 
 - [ ] **Step 5: Commit**
 
 ```bash
 git add cmd/ocgs/main.go internal/cli/cli.go internal/cli/cli_test.go README.md
 git commit -m "feat: wire ocgs main and document usage"
-```
+````
 
 - [ ] **Step 6: Final gate**
 
@@ -2023,26 +2039,26 @@ Expected: all packages PASS. Delete the `./ocgs` binary if created (it is gitign
 
 ## Self-review vs spec
 
-| Spec item | Task |
-|---|---|
-| Só OpenCode Go | 4–9 (filter `serviceID`) |
-| `save` + `add` | 7, 8, 13 |
-| `ocgs`, `list`, `switch`, positional | 12, 14 |
-| Persist `account.json` + sync `auth.json` on switch | 5 |
-| Preserve other providers | 5 |
-| `verify` optional, not on switch | 11, 12 |
-| Missing store / invalid JSON | 3, 13 |
-| Unknown name, duplicate name | 6, 9 |
-| Duplicate add/save | 7, 8 |
-| Empty key, invalid name | 7 |
-| Save without active | 8 |
-| Remove active refused | 9 |
-| Verify 401 / other HTTP / network / 2xx | 11 |
-| Write 0600, atomic | 5 (`writeAtomic`), 10 |
-| ULID 26 Crockford | 5 `id.go`, 10 |
-| Cobra + gofakeit TDD | 1, 7, 12 |
-| README + sessões abertas | 14 |
-| `OPENCODE_DATA_DIR` / XDG / home | 2, 14 |
-| No keys on stdout | 4, 12, 13 |
+| Spec item                                           | Task                     |
+| --------------------------------------------------- | ------------------------ |
+| Só OpenCode Go                                      | 4–9 (filter `serviceID`) |
+| `save` + `add`                                      | 7, 8, 13                 |
+| `ocgs`, `list`, `switch`, positional                | 12, 14                   |
+| Persist `account.json` + sync `auth.json` on switch | 5                        |
+| Preserve other providers                            | 5                        |
+| `verify` optional, not on switch                    | 11, 12                   |
+| Missing store / invalid JSON                        | 3, 13                    |
+| Unknown name, duplicate name                        | 6, 9                     |
+| Duplicate add/save                                  | 7, 8                     |
+| Empty key, invalid name                             | 7                        |
+| Save without active                                 | 8                        |
+| Remove active refused                               | 9                        |
+| Verify 401 / other HTTP / network / 2xx             | 11                       |
+| Write 0600, atomic                                  | 5 (`writeAtomic`), 10    |
+| ULID 26 Crockford                                   | 5 `id.go`, 10            |
+| Cobra + gofakeit TDD                                | 1, 7, 12                 |
+| README + sessões abertas                            | 14                       |
+| `OPENCODE_DATA_DIR` / XDG / home                    | 2, 14                    |
+| No keys on stdout                                   | 4, 12, 13                |
 
 No remaining spec command without a task.

@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/spf13/cobra"
 	"agent-account-switchers/internal/store"
+
+	"github.com/spf13/cobra"
 )
 
 type Verifier interface {

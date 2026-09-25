@@ -59,10 +59,10 @@ func writeAtomic(path string, v any) error {
 	}
 	tmp := path + ".tmp"
 	if err := os.WriteFile(tmp, b, 0o600); err != nil {
-		return fmt.Errorf("não consegui gravar %s: %v. Nada foi alterado.", path, err)
+		return fmt.Errorf("não consegui gravar %s: %w. Nada foi alterado.", path, err)
 	}
 	if err := os.Rename(tmp, path); err != nil {
-		return fmt.Errorf("não consegui gravar %s: %v. Nada foi alterado.", path, err)
+		return fmt.Errorf("não consegui gravar %s: %w. Nada foi alterado.", path, err)
 	}
 	return nil
 }
@@ -85,7 +85,7 @@ func (s *Store) loadAuth() (Auth, error) {
 	}
 	var a Auth
 	if err := json.Unmarshal(b, &a); err != nil {
-		return Auth{}, fmt.Errorf("auth.json em %s não é um JSON válido: %v", s.authPath(), err)
+		return Auth{}, fmt.Errorf("auth.json em %s não é um JSON válido: %w", s.authPath(), err)
 	}
 	return a, nil
 }
@@ -100,7 +100,7 @@ func (s *Store) loadLedger() (*Ledger, error) {
 	}
 	var l Ledger
 	if err := json.Unmarshal(b, &l); err != nil {
-		return nil, fmt.Errorf("ccs-accounts.json em %s não é um JSON válido: %v", s.ledgerPath(), err)
+		return nil, fmt.Errorf("ccs-accounts.json em %s não é um JSON válido: %w", s.ledgerPath(), err)
 	}
 	if l.Accounts == nil {
 		l.Accounts = map[string]Auth{}

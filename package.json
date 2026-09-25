@@ -1,0 +1,14 @@
+{
+  "name": "agent-account-switchers",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Account switchers for coding agents (OpenCode Go, Command Code)",
+  "packageManager": "pnpm@11.24.0",
+  "scripts": {
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "prettier": "3.6.2"
+  }
+}

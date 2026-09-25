@@ -1,0 +1,13 @@
+#!/bin/sh
+set -e
+
+out="$(gofmt -l .)"
+if [ -n "$out" ]; then
+	echo "gofmt pendente em:"
+	echo "$out"
+	exit 1
+fi
+
+pnpm exec prettier --check .
+
+go test ./...

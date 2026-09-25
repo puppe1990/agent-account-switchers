@@ -9,8 +9,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/brianvoe/gofakeit/v7"
 	"agent-account-switchers/internal/ccstore"
+
+	"github.com/brianvoe/gofakeit/v7"
 )
 
 type stubVerifier struct{ err error }

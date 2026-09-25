@@ -44,15 +44,15 @@ O `Store` não grava `config.json`, `settings.json` nem sessões.
 
 Mesma UX do `ocgs`: sem args = list; primeiro token desconhecido = `switch`.
 
-| Invocação | Efeito |
-|---|---|
-| `ccs` / `ccs list` | Nomes do ledger; `→` se `apiKey` bate com `auth.json`. Sem keys no stdout. |
-| `ccs switch` sem nome | `informe a conta: ccs switch <nome>` |
-| `ccs trabalho` / `ccs switch trabalho` | Copia o snapshot para `auth.json` e marca `active`. |
-| `ccs add trabalho <chave>` | Cria snapshot inativo. Não grava `auth.json`. |
-| `ccs save trabalho` | Snapshot da `auth.json` atual no nome. |
-| `ccs remove trabalho` | Apaga do ledger. Recusa se o `apiKey` é o da `auth.json` ativa. |
-| `ccs verify` | GET `https://api.commandcode.ai/alpha/whoami` com `Authorization: Bearer <apiKey>`. |
+| Invocação                              | Efeito                                                                              |
+| -------------------------------------- | ----------------------------------------------------------------------------------- |
+| `ccs` / `ccs list`                     | Nomes do ledger; `→` se `apiKey` bate com `auth.json`. Sem keys no stdout.          |
+| `ccs switch` sem nome                  | `informe a conta: ccs switch <nome>`                                                |
+| `ccs trabalho` / `ccs switch trabalho` | Copia o snapshot para `auth.json` e marca `active`.                                 |
+| `ccs add trabalho <chave>`             | Cria snapshot inativo. Não grava `auth.json`.                                       |
+| `ccs save trabalho`                    | Snapshot da `auth.json` atual no nome.                                              |
+| `ccs remove trabalho`                  | Apaga do ledger. Recusa se o `apiKey` é o da `auth.json` ativa.                     |
+| `ccs verify`                           | GET `https://api.commandcode.ai/alpha/whoami` com `Authorization: Bearer <apiKey>`. |
 
 Nomes: trim, não vazios, sem `/`, case-sensitive.
 

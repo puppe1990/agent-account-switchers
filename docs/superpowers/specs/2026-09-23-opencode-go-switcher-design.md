@@ -81,15 +81,15 @@ O `Store` só cria, atualiza, ativa e apaga entradas com `serviceID == "opencode
 
 Cobra no `internal/cli`. Subcomandos oficiais; se o primeiro argumento não for subcomando nem flag, o root trata como `switch <nome>`.
 
-| Invocação | Efeito |
-|---|---|
-| `ocgs` / `ocgs list` | Lista contas Go. Marca a ativa com `→`. Não imprime chaves. |
-| `ocgs switch` sem nome | Erro de uso: `informe a conta: ocgs switch <nome>` |
+| Invocação                                | Efeito                                                                                                                                                                                                                        |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ocgs` / `ocgs list`                     | Lista contas Go. Marca a ativa com `→`. Não imprime chaves.                                                                                                                                                                   |
+| `ocgs switch` sem nome                   | Erro de uso: `informe a conta: ocgs switch <nome>`                                                                                                                                                                            |
 | `ocgs trabalho` / `ocgs switch trabalho` | Ativa a conta cujo `description` é `trabalho`: atualiza `active["opencode-go"]` e copia o credential para `auth.json["opencode-go"]`. Se duas contas Go tiverem o mesmo `description`, recusa e pede `save` para desambiguar. |
-| `ocgs add trabalho sk-…` | Cria conta nova. **Não** ativa. `description` único entre contas Go. |
-| `ocgs save trabalho` | Grava o `description` da conta Go **ativa** como `trabalho`. Se a ativa já tem esse nome, sucesso sem escrita. |
-| `ocgs remove trabalho` | Remove a conta do mapa. Recusa se for a ativa. Se duas contas Go tiverem o mesmo nome, recusa. |
-| `ocgs verify` | Lê a chave ativa e faz GET `https://opencode.ai/zen/go/v1/models` com `Authorization: Bearer <key>`. HTTP 2xx = ok. |
+| `ocgs add trabalho sk-…`                 | Cria conta nova. **Não** ativa. `description` único entre contas Go.                                                                                                                                                          |
+| `ocgs save trabalho`                     | Grava o `description` da conta Go **ativa** como `trabalho`. Se a ativa já tem esse nome, sucesso sem escrita.                                                                                                                |
+| `ocgs remove trabalho`                   | Remove a conta do mapa. Recusa se for a ativa. Se duas contas Go tiverem o mesmo nome, recusa.                                                                                                                                |
+| `ocgs verify`                            | Lê a chave ativa e faz GET `https://opencode.ai/zen/go/v1/models` com `Authorization: Bearer <key>`. HTTP 2xx = ok.                                                                                                           |
 
 Nomes: não vazios, sem `/`, espaços nas pontas removidos. Comparação **case-sensitive**.
 
@@ -101,22 +101,22 @@ Nomes: não vazios, sem `/`, espaços nas pontas removidos. Comparação **case-
 
 Stderr + exit 1. Sem stack. Sem API key na mensagem.
 
-| Situação | Mensagem |
-|---|---|
-| Store ausente | `não achei o store do OpenCode em <dir>. Abra o OpenCode uma vez ou rode opencode auth login.` |
-| JSON inválido | `account.json em <path> não é um JSON v2 válido: <motivo>` |
-| Nome inexistente | `conta "trabalho" não existe. Contas Go: pessoal, cliente.` (lista os nomes existentes; se vazia, diz que não há contas Go) |
-| Nome duplicado no store (switch/remove) | `há 2 contas Go chamadas "default". Renomeie a ativa com ocgs save <nome-único>.` |
-| Nome duplicado em add/save | `já existe conta Go chamada "trabalho". Use outro nome ou remova a atual.` |
-| `add` sem key / key vazia | `informe a chave: ocgs add <nome> <chave>` |
-| Nome inválido | `nome de conta inválido: "<nome>". Use um nome sem "/" e não vazio.` |
-| `save` sem conta Go ativa | `não há conta OpenCode Go ativa para salvar. Faça login ou ocgs add … e ocgs switch.` |
-| `remove` da conta ativa | `"trabalho" está ativa. Troque com ocgs switch <outra> antes de remover.` |
-| `verify` sem chave ativa | `não há chave Go ativa para verificar.` |
-| API recusou (401/403) | `a chave ativa foi recusada pela API OpenCode Go (HTTP 401). Troque de conta ou gere outra chave.` |
-| API outro HTTP | `a API OpenCode Go respondeu HTTP <code> ao verificar a chave ativa.` |
-| Rede/timeout | `não consegui falar com a API OpenCode Go em <url>: <erro>. O switch local não depende disso.` |
-| Falha ao gravar | `não consegui gravar <path>: <erro>. Nada foi alterado.` |
+| Situação                                | Mensagem                                                                                                                    |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Store ausente                           | `não achei o store do OpenCode em <dir>. Abra o OpenCode uma vez ou rode opencode auth login.`                              |
+| JSON inválido                           | `account.json em <path> não é um JSON v2 válido: <motivo>`                                                                  |
+| Nome inexistente                        | `conta "trabalho" não existe. Contas Go: pessoal, cliente.` (lista os nomes existentes; se vazia, diz que não há contas Go) |
+| Nome duplicado no store (switch/remove) | `há 2 contas Go chamadas "default". Renomeie a ativa com ocgs save <nome-único>.`                                           |
+| Nome duplicado em add/save              | `já existe conta Go chamada "trabalho". Use outro nome ou remova a atual.`                                                  |
+| `add` sem key / key vazia               | `informe a chave: ocgs add <nome> <chave>`                                                                                  |
+| Nome inválido                           | `nome de conta inválido: "<nome>". Use um nome sem "/" e não vazio.`                                                        |
+| `save` sem conta Go ativa               | `não há conta OpenCode Go ativa para salvar. Faça login ou ocgs add … e ocgs switch.`                                       |
+| `remove` da conta ativa                 | `"trabalho" está ativa. Troque com ocgs switch <outra> antes de remover.`                                                   |
+| `verify` sem chave ativa                | `não há chave Go ativa para verificar.`                                                                                     |
+| API recusou (401/403)                   | `a chave ativa foi recusada pela API OpenCode Go (HTTP 401). Troque de conta ou gere outra chave.`                          |
+| API outro HTTP                          | `a API OpenCode Go respondeu HTTP <code> ao verificar a chave ativa.`                                                       |
+| Rede/timeout                            | `não consegui falar com a API OpenCode Go em <url>: <erro>. O switch local não depende disso.`                              |
+| Falha ao gravar                         | `não consegui gravar <path>: <erro>. Nada foi alterado.`                                                                    |
 
 Write atômico: se o rename falhar, o arquivo original permanece.
 
