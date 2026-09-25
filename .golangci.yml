@@ -1,0 +1,34 @@
+version: '2'
+
+linters:
+  default: standard
+  enable:
+    - errorlint
+    - gocritic
+    - prealloc
+    - unconvert
+    - unparam
+  settings:
+    errcheck:
+      exclude-functions:
+        - fmt.Fprint
+        - fmt.Fprintf
+        - fmt.Fprintln
+        - fmt.Print
+        - fmt.Printf
+        - fmt.Println
+        - (*text/tabwriter.Writer).Flush
+  exclusions:
+    rules:
+      - path: _test\.go
+        linters:
+          - errcheck
+          - unparam
+      - linters:
+          - staticcheck
+        text: ST1005
+
+formatters:
+  enable:
+    - gofmt
+    - goimports

@@ -54,7 +54,7 @@ func (s *Store) load() (*File, error) {
 	}
 	var f File
 	if err := json.Unmarshal(b, &f); err != nil {
-		return nil, fmt.Errorf("account.json em %s não é um JSON v2 válido: %v", s.accountPath(), err)
+		return nil, fmt.Errorf("account.json em %s não é um JSON v2 válido: %w", s.accountPath(), err)
 	}
 	if f.Version != 2 {
 		return nil, fmt.Errorf("account.json em %s não é um JSON v2 válido: version %d", s.accountPath(), f.Version)
@@ -92,10 +92,10 @@ func writeAtomic(path string, v any) error {
 	}
 	tmp := path + ".tmp"
 	if err := os.WriteFile(tmp, b, 0o600); err != nil {
-		return fmt.Errorf("não consegui gravar %s: %v. Nada foi alterado.", path, err)
+		return fmt.Errorf("não consegui gravar %s: %w. Nada foi alterado.", path, err)
 	}
 	if err := os.Rename(tmp, path); err != nil {
-		return fmt.Errorf("não consegui gravar %s: %v. Nada foi alterado.", path, err)
+		return fmt.Errorf("não consegui gravar %s: %w. Nada foi alterado.", path, err)
 	}
 	return nil
 }
