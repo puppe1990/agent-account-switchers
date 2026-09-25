@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"agent-account-switchers/internal/ccstore"
+	"agent-account-switchers/internal/grokstore"
 	"agent-account-switchers/internal/store"
 	"agent-account-switchers/internal/webui"
 )
@@ -29,10 +30,12 @@ func main() {
 	}
 	goDir := store.ResolveDataDir(os.Getenv, home)
 	ccDir := ccstore.ResolveDataDir(os.Getenv, home)
+	grokDir := grokstore.ResolveDataDir(os.Getenv, home)
 
 	server := webui.New(
 		webui.NamedService{ID: "opencode-go", Label: "OpenCode Go", Service: goAdapter{store.New(goDir)}},
 		webui.NamedService{ID: "commandcode", Label: "Command Code", Service: ccAdapter{ccstore.New(ccDir)}},
+		webui.NamedService{ID: "grok", Label: "Grok", Service: grokAdapter{grokstore.New(grokDir)}},
 	)
 
 	addr := fmt.Sprintf("127.0.0.1:%d", *port)
@@ -110,3 +113,19 @@ func (a ccAdapter) List() ([]webui.Account, error) {
 }
 
 func (a ccAdapter) Switch(name string) error { return a.store.Switch(name) }
+
+type grokAdapter struct{ store *grokstore.Store }
+
+func (a grokAdapter) List() ([]webui.Account, error) {
+	entries, err := a.store.List()
+	if err != nil {
+		return nil, err
+	}
+	accounts := make([]webui.Account, 0, len(entries))
+	for _, e := range entries {
+		accounts = append(accounts, webui.Account{Name: e.Name, Active: e.Active})
+	}
+	return accounts, nil
+}
+
+func (a grokAdapter) Switch(name string) error { return a.store.Switch(name) }

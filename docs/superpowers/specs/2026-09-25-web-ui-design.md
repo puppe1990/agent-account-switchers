@@ -5,7 +5,7 @@ Status: aprovado (execução autônoma)
 
 ## Objetivo
 
-Interface web local e mínima para listar e trocar as contas ativas do **OpenCode Go** (`ocgs`) e do **Command Code** (`ccs`) sem decorar comandos. Mesmo efeito dos CLIs: reescreve o `auth.json`/`account.json` correspondente; sessões já abertas valem no próximo launch.
+Interface web local e mínima para listar e trocar as contas ativas do **OpenCode Go** (`ocgs`), do **Command Code** (`ccs`) e do **Grok** sem decorar comandos. Mesmo efeito dos CLIs: reescreve o `auth.json`/`account.json` correspondente; sessões já abertas valem no próximo launch.
 
 ## Fora de escopo
 
@@ -19,11 +19,13 @@ Interface web local e mínima para listar e trocar as contas ativas do **OpenCod
 ```
 cmd/switcher-ui/     main: resolve dirs, adapters, listen 127.0.0.1, abre browser
 internal/webui/      Server HTTP + handlers + index.html (embed)
+internal/grokstore/  leitura dos perfis ~/.grok/accounts + switch do auth.json
 ```
 
 - `webui.Service` é a fatia mínima de cada switcher: `List() ([]Account, error)` e `Switch(name) error`.
 - `Account{Name, Active}` — sem credenciais; a UI nunca vê chaves.
-- `cmd/switcher-ui` define dois adapters finos sobre `store.Store` (Go) e `ccstore.Store` (Command Code), convertendo os `Entry` de cada pacote para `webui.Account`.
+- `cmd/switcher-ui` define adapters finos sobre `store.Store` (Go), `ccstore.Store` (Command Code) e `grokstore.Store` (Grok), convertendo os `Entry` de cada pacote para `webui.Account`.
+- `grokstore` é independente do módulo `github.com/puppe1990/grok-accounts` (os pacotes de lá são `internal/`, não importáveis): relê o mesmo formato de perfil e reescreve `~/.grok/auth.json`. Só lista e troca — não adiciona/remove.
 
 ## HTTP
 
