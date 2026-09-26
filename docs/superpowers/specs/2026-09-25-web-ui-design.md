@@ -30,7 +30,7 @@ internal/codexlogin/ roda `codex login`, abre a URL numa janela anônima e acomp
 - `cmd/switcher-ui` define adapters finos sobre `store.Store` (Go), `ccstore.Store` (Command Code), `grokstore.Store` (Grok) e `codexstore.Store`/`codexlogin.Manager` (Codex), convertendo os `Entry` de cada pacote para `webui.Account`.
 - `grokstore` é independente do módulo `github.com/puppe1990/grok-accounts` (os pacotes de lá são `internal/`, não importáveis): relê o mesmo formato de perfil e reescreve `~/.grok/auth.json`. Só lista e troca — não adiciona/remove.
 - `codexstore` relê o `accounts/registry.json` do `codex-auth` (schema 3) e troca copiando `accounts/<key>.auth.json` sobre `~/.codex/auth.json`, atualizando `active_account_key` no registry. Antes de sobrescrever, sincroniza a auth viva no perfil salvo correspondente para não perder tokens renovados pelo Codex (`Sync`); ao final de um login, importa a conta nova (`ImportCurrent`, claims do `id_token` → registro).
-- `codexlogin` roda `codex login` em segundo plano, esconde o navegador padrão do CLI (shim de `open`/`xdg-open` no PATH) e abre a URL de autenticação no primeiro navegador Chromium disponível (`--incognito`). Ao terminar, chama `ImportCurrent`.
+- `codexlogin` roda `codex login` em segundo plano, esconde o navegador padrão do CLI (shim de `open`/`xdg-open` no PATH) e abre a URL de autenticação numa janela anônima do Brave (fallback: Chrome/Edge/Chromium, depois o navegador padrão). Ao terminar, chama `ImportCurrent`.
 
 ## HTTP
 

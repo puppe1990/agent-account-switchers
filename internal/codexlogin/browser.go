@@ -12,21 +12,22 @@ import (
 func OpenPrivate(url string) error {
 	switch runtime.GOOS {
 	case "darwin":
-		for _, app := range []string{"Google Chrome", "Brave Browser", "Microsoft Edge", "Chromium"} {
+		// Brave is the preferred one; the rest are fallbacks.
+		for _, app := range []string{"Brave Browser", "Google Chrome", "Microsoft Edge", "Chromium"} {
 			if err := exec.Command("open", "-na", app, "--args", "--incognito", url).Run(); err == nil {
 				return nil
 			}
 		}
 		return exec.Command("open", url).Run()
 	case "windows":
-		for _, exe := range []string{"chrome", "msedge", "brave", "chromium"} {
+		for _, exe := range []string{"brave", "chrome", "msedge", "chromium"} {
 			if err := exec.Command(exe, "--incognito", url).Start(); err == nil {
 				return nil
 			}
 		}
 		return exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
 	default:
-		for _, exe := range []string{"google-chrome", "brave-browser", "chromium", "chromium-browser", "microsoft-edge"} {
+		for _, exe := range []string{"brave-browser", "google-chrome", "chromium", "chromium-browser", "microsoft-edge"} {
 			if err := exec.Command(exe, "--incognito", url).Start(); err == nil {
 				return nil
 			}
