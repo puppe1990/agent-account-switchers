@@ -7,18 +7,18 @@
     <script src="https://cdn.tailwindcss.com"></script>
   </head>
   <body class="min-h-screen bg-neutral-950 text-neutral-100 antialiased">
-    <main class="mx-auto flex max-w-3xl flex-col gap-6 p-6">
+    <main class="mx-auto flex max-w-4xl flex-col gap-6 p-6">
       <header class="space-y-1">
         <h1 class="text-2xl font-semibold tracking-tight">
           Contas dos agentes
         </h1>
         <p class="text-sm text-neutral-400">
-          Troque a conta ativa do OpenCode Go, do Command Code e do Grok. A
-          troca vale no próximo launch.
+          Troque a conta ativa do OpenCode Go, do Command Code, do Grok e do
+          Codex. A troca vale no próximo launch.
         </p>
       </header>
 
-      <div id="services" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"></div>
+      <div id="services" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"></div>
 
       <p
         id="status"
@@ -45,13 +45,22 @@
             })[char],
         )
 
-      function showStatus(message, ok = true) {
+      function showStatus(message, ok = true, url = '') {
         statusEl.textContent = message
         statusEl.className =
           'rounded-lg border px-3 py-2 text-sm ' +
           (ok
             ? 'border-emerald-900 bg-emerald-950 text-emerald-300'
             : 'border-red-900 bg-red-950 text-red-300')
+        if (url) {
+          const link = document.createElement('a')
+          link.href = url
+          link.target = '_blank'
+          link.rel = 'noreferrer'
+          link.textContent = 'abrir link'
+          link.className = 'ml-2 underline'
+          statusEl.append(' ', link)
+        }
       }
 
       function render(services) {
@@ -62,9 +71,15 @@
         const rows = service.accounts.length
           ? service.accounts.map((account) => row(service.id, account)).join('')
           : '<p class="text-sm text-neutral-500">Nenhuma conta salva.</p>'
+        const login = service.login
+          ? `<button type="button" class="rounded-md border border-neutral-700 px-2 py-1 text-xs text-neutral-300 transition hover:border-neutral-500 hover:bg-neutral-800" data-login="${esc(service.id)}" title="Entrar com outra conta numa janela anônima">login anônimo</button>`
+          : ''
         return `
           <section class="flex flex-col gap-3 rounded-xl border border-neutral-800 bg-neutral-900/60 p-4">
-            <h2 class="text-sm font-medium text-neutral-300">${esc(service.label)}</h2>
+            <div class="flex items-center justify-between gap-2">
+              <h2 class="text-sm font-medium text-neutral-300">${esc(service.label)}</h2>
+              ${login}
+            </div>
             <div class="flex flex-col gap-2">${rows}</div>
           </section>`
       }
@@ -93,17 +108,99 @@
         }
       }
 
+      const LOGIN_POLL_MS = 2000
+      let loginService = ''
+      let loginTimer = null
+
+      async function startLogin(service) {
+        if (busy) return
+        busy = true
+        try {
+          const response = await fetch('/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ service }),
+          })
+          if (!response.ok) throw new Error(await errorText(response))
+          loginService = service
+          watchLogin(await response.json())
+        } catch (error) {
+          showStatus(String(error.message || error), false)
+        } finally {
+          busy = false
+        }
+      }
+
+      function watchLogin(status) {
+        if (status.state === 'running') {
+          showStatus(status.message || 'Aguardando o login…', true, status.url)
+          if (!loginTimer) {
+            loginTimer = setInterval(pollLogin, LOGIN_POLL_MS)
+          }
+          return
+        }
+        stopPolling()
+        if (status.state === 'done') {
+          showStatus(status.message || 'Conta adicionada.', true)
+          load()
+        } else if (status.state === 'error') {
+          showStatus(status.message || 'O login falhou.', false)
+        }
+      }
+
+      async function pollLogin() {
+        try {
+          const url = `/api/login?service=${encodeURIComponent(loginService)}`
+          const response = await fetch(url)
+          if (!response.ok) throw new Error(await errorText(response))
+          watchLogin(await response.json())
+        } catch (error) {
+          stopPolling()
+          showStatus(String(error.message || error), false)
+        }
+      }
+
+      function stopPolling() {
+        clearInterval(loginTimer)
+        loginTimer = null
+      }
+
+      async function resumeLogin(services) {
+        const service = services.find((item) => item.login)
+        if (!service) return
+        try {
+          const response = await fetch(
+            `/api/login?service=${encodeURIComponent(service.id)}`,
+          )
+          if (!response.ok) return
+          const status = await response.json()
+          if (status.state === 'running') {
+            loginService = service.id
+            watchLogin(status)
+          }
+        } catch {
+          return
+        }
+      }
+
       async function load() {
         try {
           const response = await fetch('/api/accounts')
           if (!response.ok) throw new Error(await errorText(response))
-          render(await response.json())
+          const services = await response.json()
+          render(services)
+          resumeLogin(services)
         } catch (error) {
           showStatus(String(error.message || error), false)
         }
       }
 
       servicesEl.addEventListener('click', async (event) => {
+        const loginButton = event.target.closest('button[data-login]')
+        if (loginButton) {
+          await startLogin(loginButton.dataset.login)
+          return
+        }
         const button = event.target.closest('button[data-service]')
         if (!button || busy) return
         const { service, name } = button.dataset

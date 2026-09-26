@@ -180,3 +180,117 @@ func TestAccountsListError(t *testing.T) {
 		t.Fatalf("status = %d, quero 500", rec.Code)
 	}
 }
+
+type fakeLogin struct {
+	status  LoginStatus
+	starts  int
+	startFn func() LoginStatus
+}
+
+func (f *fakeLogin) Start() LoginStatus {
+	f.starts++
+	if f.startFn != nil {
+		return f.startFn()
+	}
+	return f.status
+}
+
+func (f *fakeLogin) Status() LoginStatus { return f.status }
+
+func TestAccountsFlagsLoginCapability(t *testing.T) {
+	login := &fakeLogin{status: LoginStatus{State: "idle"}}
+	srv := newTestServer(
+		NamedService{ID: "grok", Label: "Grok", Service: &fakeService{}},
+		NamedService{ID: "codex", Label: "Codex", Service: &fakeService{}, Login: login},
+	)
+
+	rec := httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/accounts", nil))
+
+	var views []map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &views); err != nil {
+		t.Fatalf("json inválido: %v", err)
+	}
+	if views[0]["login"] != nil {
+		t.Fatalf("grok não deveria anunciar login: %v", views[0])
+	}
+	if views[1]["login"] != true {
+		t.Fatalf("codex deveria anunciar login: %v", views[1])
+	}
+}
+
+func TestLoginStartAndStatus(t *testing.T) {
+	login := &fakeLogin{status: LoginStatus{State: "running", Message: "Janela anônima aberta."}}
+	srv := newTestServer(NamedService{ID: "codex", Label: "Codex", Service: &fakeService{}, Login: login})
+
+	rec := httptest.NewRecorder()
+	body := strings.NewReader(`{"service":"codex"}`)
+	srv.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/api/login", body))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("start status = %d, quero 200 (body %s)", rec.Code, rec.Body.String())
+	}
+	if login.starts != 1 {
+		t.Fatalf("starts = %d, quero 1", login.starts)
+	}
+	var status LoginStatus
+	if err := json.Unmarshal(rec.Body.Bytes(), &status); err != nil {
+		t.Fatalf("json inválido: %v", err)
+	}
+	if status.State != "running" || status.Message != "Janela anônima aberta." {
+		t.Fatalf("status = %+v", status)
+	}
+
+	login.status = LoginStatus{State: "done", Message: "Conta adicionada."}
+	rec = httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/login?service=codex", nil))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status status = %d, quero 200", rec.Code)
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &status); err != nil {
+		t.Fatalf("json inválido: %v", err)
+	}
+	if status.State != "done" {
+		t.Fatalf("status = %+v", status)
+	}
+}
+
+func TestLoginUnknownService(t *testing.T) {
+	srv := newTestServer(NamedService{ID: "codex", Label: "Codex", Service: &fakeService{}, Login: &fakeLogin{}})
+
+	rec := httptest.NewRecorder()
+	body := strings.NewReader(`{"service":"nao-existe"}`)
+	srv.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/api/login", body))
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("start status = %d, quero 404", rec.Code)
+	}
+
+	rec = httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/login?service=nao-existe", nil))
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("poll status = %d, quero 404", rec.Code)
+	}
+}
+
+func TestLoginUnsupportedService(t *testing.T) {
+	srv := newTestServer(NamedService{ID: "grok", Label: "Grok", Service: &fakeService{}})
+
+	rec := httptest.NewRecorder()
+	body := strings.NewReader(`{"service":"grok"}`)
+	srv.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/api/login", body))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, quero 400", rec.Code)
+	}
+	if !strings.Contains(rec.Body.String(), "não suporta login") {
+		t.Fatalf("resposta = %s", rec.Body.String())
+	}
+}
+
+func TestLoginBadBody(t *testing.T) {
+	srv := newTestServer(NamedService{ID: "codex", Label: "Codex", Service: &fakeService{}, Login: &fakeLogin{}})
+
+	rec := httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/api/login", strings.NewReader(`{`)))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, quero 400", rec.Code)
+	}
+}

@@ -23,22 +23,37 @@ type Service interface {
 	Switch(name string) error
 }
 
+// LoginStatus is the public view of an interactive sign in flow.
+type LoginStatus struct {
+	State   string `json:"state"`
+	Message string `json:"message,omitempty"`
+	URL     string `json:"url,omitempty"`
+}
+
+// Login is the optional capability of a service: starting an interactive sign
+// in, for example opening the provider's auth flow in a private window.
+type Login interface {
+	Start() LoginStatus
+	Status() LoginStatus
+}
+
 // NamedService ties a service to the id and label used by the UI.
 type NamedService struct {
 	ID      string
 	Label   string
 	Service Service
+	Login   Login
 }
 
 type Server struct {
 	services []NamedService
-	byID     map[string]Service
+	byID     map[string]NamedService
 }
 
 func New(services ...NamedService) *Server {
-	byID := make(map[string]Service, len(services))
+	byID := make(map[string]NamedService, len(services))
 	for _, s := range services {
-		byID[s.ID] = s.Service
+		byID[s.ID] = s
 	}
 	return &Server{services: services, byID: byID}
 }
@@ -48,12 +63,15 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /{$}", s.handleIndex)
 	mux.HandleFunc("GET /api/accounts", s.handleAccounts)
 	mux.HandleFunc("POST /api/switch", s.handleSwitch)
+	mux.HandleFunc("POST /api/login", s.handleLoginStart)
+	mux.HandleFunc("GET /api/login", s.handleLoginStatus)
 	return mux
 }
 
 type serviceView struct {
 	ID       string    `json:"id"`
 	Label    string    `json:"label"`
+	Login    bool      `json:"login,omitempty"`
 	Accounts []Account `json:"accounts"`
 }
 
@@ -76,6 +94,10 @@ type switchRequest struct {
 	Name    string `json:"name"`
 }
 
+type serviceRequest struct {
+	Service string `json:"service"`
+}
+
 func (s *Server) handleSwitch(w http.ResponseWriter, r *http.Request) {
 	var req switchRequest
 	dec := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<16))
@@ -84,7 +106,7 @@ func (s *Server) handleSwitch(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, fmt.Errorf("corpo da requisição inválido: %w", err))
 		return
 	}
-	svc, ok := s.byID[req.Service]
+	ns, ok := s.byID[req.Service]
 	if !ok {
 		writeError(w, http.StatusNotFound, fmt.Errorf("serviço %q não existe", req.Service))
 		return
@@ -93,7 +115,7 @@ func (s *Server) handleSwitch(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, fmt.Errorf("informe a conta"))
 		return
 	}
-	if err := svc.Switch(req.Name); err != nil {
+	if err := ns.Service.Switch(req.Name); err != nil {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
@@ -103,6 +125,42 @@ func (s *Server) handleSwitch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, views)
+}
+
+func (s *Server) handleLoginStart(w http.ResponseWriter, r *http.Request) {
+	var req serviceRequest
+	dec := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<16))
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, fmt.Errorf("corpo da requisição inválido: %w", err))
+		return
+	}
+	login, status, err := s.login(req.Service)
+	if err != nil {
+		writeError(w, status, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, login.Start())
+}
+
+func (s *Server) handleLoginStatus(w http.ResponseWriter, r *http.Request) {
+	login, status, err := s.login(r.URL.Query().Get("service"))
+	if err != nil {
+		writeError(w, status, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, login.Status())
+}
+
+func (s *Server) login(id string) (Login, int, error) {
+	ns, ok := s.byID[id]
+	if !ok {
+		return nil, http.StatusNotFound, fmt.Errorf("serviço %q não existe", id)
+	}
+	if ns.Login == nil {
+		return nil, http.StatusBadRequest, fmt.Errorf("serviço %q não suporta login", id)
+	}
+	return ns.Login, http.StatusOK, nil
 }
 
 func (s *Server) snapshot() ([]serviceView, error) {
@@ -115,7 +173,7 @@ func (s *Server) snapshot() ([]serviceView, error) {
 		if accounts == nil {
 			accounts = []Account{}
 		}
-		views = append(views, serviceView{ID: ns.ID, Label: ns.Label, Accounts: accounts})
+		views = append(views, serviceView{ID: ns.ID, Label: ns.Label, Login: ns.Login != nil, Accounts: accounts})
 	}
 	return views, nil
 }
