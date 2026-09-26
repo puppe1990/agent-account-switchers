@@ -64,7 +64,7 @@ switcher-ui --no-open       # não abrir o navegador
 - `SWITCHER_UI_PORT` define a porta; `OPENCODE_DATA_DIR`/`CCS_DATA_DIR`/`GROK_HOME`/`CODEX_HOME` os diretórios.
 - O serviço Grok lê os perfis de `~/.grok/accounts` (formato do [grok-accounts](https://github.com/puppe1990/grok-accounts)) e troca reescrevendo `~/.grok/auth.json`.
 - O serviço Codex lê as contas do registry do [codex-auth](https://github.com/Loongphy/codex-auth) em `~/.codex/accounts/registry.json` e troca reescrevendo `~/.codex/auth.json`.
-- No card do Codex, o botão **login anônimo** roda `codex login` em segundo plano, abre a URL de autenticação numa janela anônima (Chrome/Brave/Edge; cai no navegador padrão se não achar) e registra a conta no registry ao final. É o jeito de entrar com outra conta sem deslogar a atual — deixe o `switcher-ui` aberto até concluir o login.
+- No card do Codex, o botão **login anônimo** roda `codex login` em segundo plano, abre a URL de autenticação numa janela anônima (Brave primeiro; depois Chrome/Edge, e por fim o navegador padrão) e registra a conta no registry ao final. É o jeito de entrar com outra conta sem deslogar a atual — deixe o `switcher-ui` aberto até concluir o login.
 
 ## Qualidade
 
