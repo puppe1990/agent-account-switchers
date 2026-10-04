@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"flag"
 	"fmt"
@@ -35,11 +36,12 @@ func main() {
 	grokDir := grokstore.ResolveDataDir(os.Getenv, home)
 	codexDir := codexstore.ResolveDataDir(os.Getenv, home)
 	codexAccounts := codexstore.New(codexDir)
+	grokAccounts := grokstore.New(grokDir)
 
 	server := webui.New(
 		webui.NamedService{ID: "opencode-go", Label: "OpenCode Go", Service: goAdapter{store.New(goDir)}},
 		webui.NamedService{ID: "commandcode", Label: "Command Code", Service: ccAdapter{ccstore.New(ccDir)}},
-		webui.NamedService{ID: "grok", Label: "Grok", Service: grokAdapter{grokstore.New(grokDir)}},
+		webui.NamedService{ID: "grok", Label: "Grok", Service: grokAdapter{grokAccounts}},
 		webui.NamedService{
 			ID:      "codex",
 			Label:   "Codex",
@@ -54,6 +56,10 @@ func main() {
 		fmt.Fprintf(os.Stderr, "não consegui abrir %s: %v\n", addr, err)
 		os.Exit(1)
 	}
+	syncContext, stopSync := context.WithCancel(context.Background())
+	go grokAccounts.RunSync(syncContext, 10*time.Second, func(err error) {
+		fmt.Fprintf(os.Stderr, "Grok: não foi possível guardar a sessão atual: %v\n", err)
+	})
 	url := fmt.Sprintf("http://%s/", listener.Addr().String())
 	fmt.Printf("Switcher UI em %s (Ctrl+C para sair)\n", url)
 	if !*noOpen {
@@ -64,7 +70,9 @@ func main() {
 		Handler:           server.Handler(),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
-	if err := srv.Serve(listener); err != nil && !errors.Is(err, http.ErrServerClosed) {
+	serveErr := srv.Serve(listener)
+	stopSync()
+	if err := serveErr; err != nil && !errors.Is(err, http.ErrServerClosed) {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
@@ -133,7 +141,7 @@ func (a grokAdapter) List() ([]webui.Account, error) {
 	}
 	accounts := make([]webui.Account, 0, len(entries))
 	for _, e := range entries {
-		accounts = append(accounts, webui.Account{Name: e.Name, Active: e.Active})
+		accounts = append(accounts, webui.Account{Name: e.Name, Active: e.Active, Warning: e.Warning})
 	}
 	return accounts, nil
 }

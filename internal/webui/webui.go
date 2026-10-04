@@ -13,8 +13,9 @@ var indexHTML []byte
 // Account is the public view of a stored account. It deliberately carries no
 // credentials: the UI only needs the name and whether it is active.
 type Account struct {
-	Name   string `json:"name"`
-	Active bool   `json:"active"`
+	Name    string `json:"name"`
+	Active  bool   `json:"active"`
+	Warning string `json:"warning,omitempty"`
 }
 
 // Service is the narrow slice of a switcher the UI needs.
@@ -69,6 +70,7 @@ func (s *Server) Handler() http.Handler {
 }
 
 type serviceView struct {
+	Error    string    `json:"error,omitempty"`
 	ID       string    `json:"id"`
 	Label    string    `json:"label"`
 	Login    bool      `json:"login,omitempty"`
@@ -81,12 +83,7 @@ func (s *Server) handleIndex(w http.ResponseWriter, _ *http.Request) {
 }
 
 func (s *Server) handleAccounts(w http.ResponseWriter, _ *http.Request) {
-	views, err := s.snapshot()
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, err)
-		return
-	}
-	writeJSON(w, http.StatusOK, views)
+	writeJSON(w, http.StatusOK, s.snapshot())
 }
 
 type switchRequest struct {
@@ -119,12 +116,7 @@ func (s *Server) handleSwitch(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	views, err := s.snapshot()
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, err)
-		return
-	}
-	writeJSON(w, http.StatusOK, views)
+	writeJSON(w, http.StatusOK, s.snapshot())
 }
 
 func (s *Server) handleLoginStart(w http.ResponseWriter, r *http.Request) {
@@ -163,19 +155,20 @@ func (s *Server) login(id string) (Login, int, error) {
 	return ns.Login, http.StatusOK, nil
 }
 
-func (s *Server) snapshot() ([]serviceView, error) {
+func (s *Server) snapshot() []serviceView {
 	views := make([]serviceView, 0, len(s.services))
 	for _, ns := range s.services {
 		accounts, err := ns.Service.List()
 		if err != nil {
-			return nil, fmt.Errorf("%s: %w", ns.Label, err)
+			views = append(views, serviceView{ID: ns.ID, Label: ns.Label, Login: ns.Login != nil, Accounts: []Account{}, Error: err.Error()})
+			continue
 		}
 		if accounts == nil {
 			accounts = []Account{}
 		}
 		views = append(views, serviceView{ID: ns.ID, Label: ns.Label, Login: ns.Login != nil, Accounts: accounts})
 	}
-	return views, nil
+	return views
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {

@@ -171,13 +171,25 @@ func TestSwitchServiceError(t *testing.T) {
 	}
 }
 
-func TestAccountsListError(t *testing.T) {
-	srv := newTestServer(NamedService{ID: "cc", Label: "CC", Service: &fakeService{listErr: errors.New("boom")}})
+func TestAccountsListErrorDoesNotHideHealthyServices(t *testing.T) {
+	srv := newTestServer(
+		NamedService{ID: "cc", Label: "CC", Service: &fakeService{listErr: errors.New("boom")}},
+		NamedService{ID: "grok", Label: "Grok", Service: &fakeService{accounts: []Account{{Name: "work", Active: true, Warning: "renew"}}}},
+	)
 	rec := httptest.NewRecorder()
 	srv.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/accounts", nil))
-
-	if rec.Code != http.StatusInternalServerError {
-		t.Fatalf("status = %d, quero 500", rec.Code)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, quero 200", rec.Code)
+	}
+	var views []serviceView
+	if err := json.Unmarshal(rec.Body.Bytes(), &views); err != nil {
+		t.Fatal(err)
+	}
+	if len(views) != 2 || views[0].Error != "boom" || len(views[0].Accounts) != 0 {
+		t.Fatalf("missing isolated error: %+v", views)
+	}
+	if len(views[1].Accounts) != 1 || views[1].Accounts[0].Warning != "renew" {
+		t.Fatalf("healthy service missing: %+v", views)
 	}
 }
 
