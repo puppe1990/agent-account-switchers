@@ -14,7 +14,8 @@
         </h1>
         <p class="text-sm text-neutral-400">
           Troque a conta ativa do OpenCode Go, do Command Code, do Grok e do
-          Codex. A troca vale no próximo launch.
+          Codex. O Grok recarrega a conta automaticamente; nos demais, abra uma
+          nova sessão.
         </p>
       </header>
 
@@ -68,9 +69,19 @@
       }
 
       function card(service) {
-        const rows = service.accounts.length
-          ? service.accounts.map((account) => row(service.id, account)).join('')
-          : '<p class="text-sm text-neutral-500">Nenhuma conta salva.</p>'
+        const recovery =
+          service.id === 'grok' &&
+          !service.error &&
+          !service.accounts.some((account) => account.active)
+            ? `<div class="rounded-lg border border-amber-900 bg-amber-950/40 p-3 text-xs text-amber-200">Sem sessão ativa. Se a troca pedir autenticação, entre novamente e atualize o perfil com <code>grok-accounts login</code>.</div>`
+            : ''
+        const rows = service.error
+          ? `<p class="text-sm text-amber-300">${esc(service.error)}</p>`
+          : service.accounts.length
+            ? service.accounts
+                .map((account) => row(service.id, account))
+                .join('')
+            : '<p class="text-sm text-neutral-500">Nenhuma conta salva.</p>'
         const login = service.login
           ? `<button type="button" class="rounded-md border border-neutral-700 px-2 py-1 text-xs text-neutral-300 transition hover:border-neutral-500 hover:bg-neutral-800" data-login="${esc(service.id)}" title="Entrar com outra conta numa janela anônima">login anônimo</button>`
           : ''
@@ -80,17 +91,27 @@
               <h2 class="text-sm font-medium text-neutral-300">${esc(service.label)}</h2>
               ${login}
             </div>
+            ${recovery}
             <div class="flex flex-col gap-2">${rows}</div>
           </section>`
       }
 
       function row(serviceId, account) {
+        return (
+          accountRow(serviceId, account) +
+          (account.warning
+            ? `<p class="px-1 text-xs text-amber-300">${esc(account.warning)}</p>`
+            : '')
+        )
+      }
+
+      function accountRow(serviceId, account) {
         const base =
           'flex w-full items-center justify-between gap-2 rounded-lg border px-3 py-2 text-sm'
         if (account.active) {
           return `<div class="${base} border-emerald-800 bg-emerald-950/60 text-emerald-200">
             <span class="truncate">${esc(account.name)}</span>
-            <span class="rounded bg-emerald-900/70 px-2 py-0.5 text-xs text-emerald-300">ativa</span>
+            <span class="rounded bg-emerald-900/70 px-2 py-0.5 text-xs text-emerald-300">${serviceId === 'grok' ? 'selecionada' : 'ativa'}</span>
           </div>`
         }
         return `<button type="button" class="${base} border-neutral-800 text-neutral-200 transition hover:border-neutral-600 hover:bg-neutral-800/60" data-service="${esc(serviceId)}" data-name="${esc(account.name)}">
@@ -183,15 +204,20 @@
         }
       }
 
+      let loading = false
       async function load() {
+        if (loading || busy) return
+        loading = true
         try {
           const response = await fetch('/api/accounts')
           if (!response.ok) throw new Error(await errorText(response))
           const services = await response.json()
           render(services)
-          resumeLogin(services)
+          if (!loginTimer) resumeLogin(services)
         } catch (error) {
           showStatus(String(error.message || error), false)
+        } finally {
+          loading = false
         }
       }
 
@@ -214,7 +240,12 @@
           })
           if (!response.ok) throw new Error(await errorText(response))
           render(await response.json())
-          showStatus(`Agora usando "${name}". Vale no próximo launch.`, true)
+          showStatus(
+            service === 'grok'
+              ? `Perfil "${name}" selecionado. O Grok recarrega a conta e tenta renovar a sessão; se pedir login, use grok-accounts login.`
+              : `Agora usando "${name}". Abra uma nova sessão do agente.`,
+            true,
+          )
         } catch (error) {
           showStatus(String(error.message || error), false)
         } finally {
@@ -224,6 +255,12 @@
       })
 
       load()
+      setInterval(() => {
+        if (!document.hidden) load()
+      }, 10000)
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) load()
+      })
     </script>
   </body>
 </html>
